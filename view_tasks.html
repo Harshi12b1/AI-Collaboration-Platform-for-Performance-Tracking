@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks | Student Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-bg: #f8f9fc;
+            --dark-text: #5a5c69;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .task-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            border: none;
+            transition: all 0.3s ease;
+            background-color: white;
+            overflow: hidden;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .task-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+            padding: 1.25rem;
+        }
+        
+        .task-body {
+            padding: 1.25rem;
+        }
+        
+        .task-footer {
+            background-color: rgba(0, 0, 0, 0.03);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 1.25rem;
+        }
+        
+        .deadline-badge {
+            font-size: 0.9rem;
+        }
+        
+        .file-download {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: rgba(78, 115, 223, 0.1);
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .file-download:hover {
+            background-color: rgba(78, 115, 223, 0.2);
+        }
+        
+        .custom-file-upload {
+            border: 2px dashed #d1d3e2;
+            border-radius: 5px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .custom-file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .rating-display {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-upload {
+            background: linear-gradient(to right, var(--secondary-color), #0ca678);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .timestamp {
+            font-size: 0.875rem;
+            color: var(--dark-text);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div style="position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1000;">
+        <a href="/mcq" style="display: inline-flex; align-items: center; padding: 10px 15px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px; font-family: Arial, sans-serif; font-size: 14px; transition: all 0.3s ease;">
+            <i class="fas fa-link" style="margin-right: 8px;"></i>AI-Task
+        </a>
+    </div>
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center">
+                    <i class="fas fa-tasks me-2"></i>My Assigned Tasks
+                </h1>
+                <p class="text-center text-muted">View and submit your tasks</p>
+            </div>
+        </div>
+        
+        {% if tasks %}
+        <div class="row">
+            {% for task in tasks %}
+            <div class="col-lg-6 mb-4">
+                <div class="task-card">
+                    <div class="task-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 class="mb-0">{{ task.name }}</h3>
+                            
+                               
+                            </span>
+                        </div>
+                    </div>
+                    <div class="task-body">
+                        <p class="mb-3">{{ task.description }}</p>
+                        
+                        {% if task.filename %}
+                        <div class="mb-3">
+                            <strong>Task File:</strong>
+                            <a href="{{ url_for('download_file', filename=task.filename) }}" 
+                               class="file-download text-primary" download>
+                                <i class="fas fa-file-download me-2"></i>
+                                Download Instructions
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Find student's submission if exists -->
+                        {% set student_submission = task.submissions|selectattr('student_id', 'equalto', session['student_id'])|first %}
+                        
+                        {% if student_submission %}
+                        <div class="mb-3">
+                            <strong>Your Submission:</strong>
+                            <div class="d-flex align-items-center mt-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span>Submitted on {{ student_submission.timestamp.strftime('%b %d, %Y %I:%M %p') }}</span>
+                            </div>
+                            
+                            {% if student_submission.rating %}
+                            <div class="mt-2">
+                                <strong>Your Rating:</strong>
+                                <span class="rating-display bg-{{ 'success' if student_submission.rating >= 7 else 'warning' if student_submission.rating >= 4 else 'danger' }}">
+                                    {{ student_submission.rating }}/100
+                                    <i class="fas fa-star ms-2"></i>
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="mt-2">
+                                <span class="text-muted">Not yet rated</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="task-footer">
+                        <h5 class="mb-3"><i class="fas fa-upload me-2"></i>Submit Your Work</h5>
+                        <form action="{{ url_for('upload_file', task_id=task.id) }}" method="POST" enctype="multipart/form-data">
+                            <label for="file-{{ task.id }}" class="custom-file-upload d-block">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-primary"></i>
+                                <h5>Drag and drop files here or click to browse</h5>
+                                <span class="text-muted">Supports PDF, DOCX, PPTX, and image files (Max 10MB)</span>
+                            </label>
+                            <input type="file" class="file-input" id="file-{{ task.id }}" name="file" required>
+                            <div id="file-name-{{ task.id }}" class="mt-2 small text-muted mb-3"></div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-upload text-white">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Assignment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fas fa-check-circle fa-4x text-success mb-4"></i>
+                    <h3>No Tasks Assigned</h3>
+                    <p class="text-muted">You don't have any tasks assigned at this time.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        // Show selected file name for each task
+        document.querySelectorAll('.file-input').forEach(input => {
+            input.addEventListener('change', function(e) {
+                const taskId = this.id.split('-')[1];
+                const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+                document.getElementById(`file-name-${taskId}`).textContent = fileName;
+            });
+        });
+        
+        // Add drag and drop functionality
+        document.querySelectorAll('.custom-file-upload').forEach(dropArea => {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                this.classList.add('bg-primary', 'bg-opacity-10');
+            }
+            
+            function unhighlight() {
+                this.classList.remove('bg-primary', 'bg-opacity-10');
+            }
+            
+            dropArea.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                const inputId = this.parentElement.querySelector('.file-input').id;
+                const taskId = inputId.split('-')[1];
+                
+                document.getElementById(inputId).files = files;
+                document.getElementById(`file-name-${taskId}`).textContent = files[0].name;
+            }, false);
+        });
+    </script>
+</body>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Recommendation Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --bot-color: #f8f9fa;
+            --user-color: #4361ee;
+            --text-dark: #212529;
+            --text-light: #f8f9fa;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: var(--text-dark);
+        }
+        
+        .chatbot-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 380px;
+            height: 600px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .chatbot-container.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .chatbot-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chatbot-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .chatbot-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bot-message {
+            background: var(--bot-color);
+            color: var(--text-dark);
+            border-bottom-left-radius: 5px;
+            align-self: flex-start;
+        }
+        
+        .user-message {
+            background: var(--user-color);
+            color: var(--text-light);
+            border-bottom-right-radius: 5px;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .option-btn {
+            background: white;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .option-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .chatbot-input {
+            display: flex;
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        #userInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 25px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+        
+        #sendBtn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        #sendBtn:hover {
+            background: var(--secondary-color);
+        }
+        
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            z-index: 1001;
+        }
+        
+        .chatbot-toggle i {
+            font-size: 1.5rem;
+        }
+        
+        .course-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .course-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .course-desc {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+        
+        .course-meta {
+            display: flex;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .course-meta span {
+            margin-right: 15px;
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            padding: 10px 15px;
+            background: var(--bot-color);
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #adb5bd;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Chatbot Toggle Button -->
+    <div class="chatbot-toggle" id="chatbotToggle">
+        <i class="fas fa-robot"></i>
+    </div>
+    
+    <!-- Chatbot Container -->
+    <div class="chatbot-container" id="chatbotContainer">
+        <div class="chatbot-header">
+            <div class="chatbot-title">Course Recommendation Assistant</div>
+            <button class="close-btn" id="closeBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="chatbot-messages" id="chatMessages">
+            <!-- Messages will appear here -->
+        </div>
+        
+        <div class="chatbot-input">
+            <input type="text" id="userInput" placeholder="Type your message..." autocomplete="off">
+            <button id="sendBtn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatbotToggle = document.getElementById('chatbotToggle');
+            const chatbotContainer = document.getElementById('chatbotContainer');
+            const closeBtn = document.getElementById('closeBtn');
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            let isChatOpen = false;
+            
+            // Sample course data
+            const courses = {
+                web: [
+                    {
+                        title: "Modern Web Development",
+                        description: "Learn HTML5, CSS3, JavaScript, React and Node.js to build modern web applications.",
+                        duration: "8 weeks",
+                        level: "Intermediate"
+                    },
+                    {
+                        title: "Frontend Fundamentals",
+                        description: "Master the core concepts of frontend development with hands-on projects.",
+                        duration: "6 weeks",
+                        level: "Beginner"
+                    }
+                ],
+                data: [
+                    {
+                        title: "Data Science Bootcamp",
+                        description: "Python, Pandas, NumPy, Matplotlib, and Machine Learning fundamentals.",
+                        duration: "10 weeks",
+                        level: "Advanced"
+                    },
+                    {
+                        title: "SQL for Data Analysis",
+                        description: "Learn to query databases and analyze data with SQL.",
+                        duration: "4 weeks",
+                        level: "Beginner"
+                    }
+                ],
+                ai: [
+                    {
+                        title: "AI & Machine Learning",
+                        description: "Comprehensive course covering TensorFlow, PyTorch and neural networks.",
+                        duration: "12 weeks",
+                        level: "Advanced"
+                    },
+                    {
+                        title: "Python for AI",
+                        description: "Python programming fundamentals for artificial intelligence applications.",
+                        duration: "5 weeks",
+                        level: "Beginner"
+                    }
+                ],
+                business: [
+                    {
+                        title: "Digital Marketing Strategy",
+                        description: "Learn to create effective digital marketing campaigns.",
+                        duration: "6 weeks",
+                        level: "Intermediate"
+                    },
+                    {
+                        title: "Business Analytics",
+                        description: "Data-driven decision making for business professionals.",
+                        duration: "5 weeks",
+                        level: "Intermediate"
+                    }
+                ],
+                mobile: [
+    {
+        title: "Android App Development",
+        description: "Learn to build Android apps using Kotlin and Java.",
+        duration: "8 weeks",
+        level: "Intermediate"
+    },
+    {
+        title: "iOS Development with Swift",
+        description: "Create stunning iOS applications with Swift and Xcode.",
+        duration: "9 weeks",
+        level: "Intermediate"
+    }
+],
+cloud: [
+    {
+        title: "Cloud Computing with AWS",
+        description: "Master AWS services and cloud architecture essentials.",
+        duration: "10 weeks",
+        level: "Advanced"
+    },
+    {
+        title: "Azure Fundamentals",
+        description: "Get started with Microsoft Azure cloud platform.",
+        duration: "5 weeks",
+        level: "Beginner"
+    }
+],
+cybersecurity: [
+    {
+        title: "Cybersecurity Basics",
+        description: "Protect networks and data with cybersecurity best practices.",
+        duration: "6 weeks",
+        level: "Beginner"
+    },
+    {
+        title: "Ethical Hacking",
+        description: "Learn penetration testing, vulnerabilities, and ethical hacking.",
+        duration: "10 weeks",
+        level: "Advanced"
+    }
+]
+
+            };
+            
+            // Toggle chatbot visibility
+            chatbotToggle.addEventListener('click', function() {
+                isChatOpen = !isChatOpen;
+                chatbotContainer.classList.toggle('active', isChatOpen);
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                isChatOpen = false;
+                chatbotContainer.classList.remove('active');
+            });
+            
+            // Send message function
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                addMessage(message, 'user');
+                userInput.value = '';
+                
+                // Show typing indicator
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'message bot-message typing-indicator';
+                typingIndicator.innerHTML = `
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                chatMessages.appendChild(typingIndicator);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Simulate bot response after delay
+                setTimeout(() => {
+                    chatMessages.removeChild(typingIndicator);
+                    handleBotResponse(message);
+                }, 1500);
+            }
+            
+            // Handle user input
+            sendBtn.addEventListener('click', sendMessage);
+            
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Add message to chat
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                messageDiv.textContent = text;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Add options to chat
+            function addOptions(options) {
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'options-container';
+                
+                options.forEach(option => {
+                    const optionBtn = document.createElement('div');
+                    optionBtn.className = 'option-btn';
+                    optionBtn.textContent = option;
+                    optionBtn.addEventListener('click', function() {
+                        addMessage(option, 'user');
+                        setTimeout(() => handleBotResponse(option), 500);
+                    });
+                    optionsDiv.appendChild(optionBtn);
+                });
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+                messageDiv.appendChild(optionsDiv);
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Add course recommendations
+            function addCourses(courseList) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+                
+                messageDiv.innerHTML = '<p>Here are some courses you might be interested in:</p>';
+                
+                courseList.forEach(course => {
+                    const courseCard = document.createElement('div');
+                    courseCard.className = 'course-card';
+                    courseCard.innerHTML = `
+                        <div class="course-title">${course.title}</div>
+                        <div class="course-desc">${course.description}</div>
+                        <div class="course-meta">
+                            <span><i class="far fa-clock"></i> ${course.duration}</span>
+                            <span><i class="fas fa-signal"></i> ${course.level}</span>
+                        </div>
+                    `;
+                    messageDiv.appendChild(courseCard);
+                });
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Handle bot responses
+            function handleBotResponse(userMessage) {
+                const lowerMsg = userMessage.toLowerCase();
+                
+                if (lowerMsg.includes('hi') || lowerMsg.includes('hello') || lowerMsg.includes('hey')) {
+                    addMessage("Hello! I'm your course recommendation assistant. What field are you interested in?", 'bot');
+                    addOptions(['Web Development', 'Data Science', 'Artificial Intelligence', 'Business', 'Mobile Development', 'Cloud Computing', 'Cybersecurity']);
+
+                }
+                else if (lowerMsg.includes('web') || lowerMsg.includes('development') || lowerMsg.includes('frontend') || lowerMsg.includes('backend')) {
+                    addMessage("Great choice! Web development is a high-demand skill. Here are some options:", 'bot');
+                    addCourses(courses.web);
+                    addMessage("Would you like to explore other fields too?", 'bot');
+                    addOptions(['Yes', 'No, thanks']);
+                }
+                else if (lowerMsg.includes('data') || lowerMsg.includes('science') || lowerMsg.includes('analytics') || lowerMsg.includes('sql')) {
+                    addMessage("Data science is a fantastic field with great opportunities. Check these courses:", 'bot');
+                    addCourses(courses.data);
+                    addMessage("Would you like to explore other fields too?", 'bot');
+                    addOptions(['Yes', 'No, thanks']);
+                }
+                else if (lowerMsg.includes('ai') || lowerMsg.includes('artificial') || lowerMsg.includes('machine learning') || lowerMsg.includes('ml')) {
+                    addMessage("AI is transforming industries! Here are some relevant courses:", 'bot');
+                    addCourses(courses.ai);
+                    addMessage("Would you like to explore other fields too?", 'bot');
+                    addOptions(['Yes', 'No, thanks']);
+                }
+                else if (lowerMsg.includes('business') || lowerMsg.includes('marketing') || lowerMsg.includes('management')) {
+                    addMessage("Business skills are always valuable. Here are some recommendations:", 'bot');
+                    addCourses(courses.business);
+                    addMessage("Would you like to explore other fields too?", 'bot');
+                    addOptions(['Yes', 'No, thanks']);
+                }
+                else if (lowerMsg.includes('yes') || lowerMsg.includes('sure') || lowerMsg.includes('explore')) {
+                    addMessage("What other field are you interested in?", 'bot');
+                    addOptions(['Web Development', 'Data Science', 'Artificial Intelligence', 'Business']);
+                }
+                else if (lowerMsg.includes('no') || lowerMsg.includes('thanks') || lowerMsg.includes('thank you')) {
+                    addMessage("You're welcome! Let me know if you need any other help.", 'bot');
+                }
+                else if (lowerMsg.includes('mobile') || lowerMsg.includes('android') || lowerMsg.includes('ios') || lowerMsg.includes('app')) {
+    addMessage("Mobile app development is super exciting! Check these out:", 'bot');
+    addCourses(courses.mobile);
+    addMessage("Would you like to explore other fields too?", 'bot');
+    addOptions(['Yes', 'No, thanks']);
+}
+else if (lowerMsg.includes('cloud') || lowerMsg.includes('aws') || lowerMsg.includes('azure')) {
+    addMessage("Cloud computing is the future! Here are some courses:", 'bot');
+    addCourses(courses.cloud);
+    addMessage("Would you like to explore other fields too?", 'bot');
+    addOptions(['Yes', 'No, thanks']);
+}
+else if (lowerMsg.includes('cybersecurity') || lowerMsg.includes('hacking') || lowerMsg.includes('security')) {
+    addMessage("Cybersecurity is critical today! Check these courses:", 'bot');
+    addCourses(courses.cybersecurity);
+    addMessage("Would you like to explore other fields too?", 'bot');
+    addOptions(['Yes', 'No, thanks']);
+}
+
+                else {
+                    addMessage("I'm not sure I understand. Could you tell me what field you're interested in?", 'bot');
+                    addOptions(['Web Development', 'Data Science', 'Artificial Intelligence', 'Business' , 'Mobile Development', 'Cloud Computing', 'Cybersecurity']);
+                }
+            }
+            
+            // Initial bot message
+            setTimeout(() => {
+                addMessage("Hello! I'm your course recommendation assistant. What field are you interested in?", 'bot');
+                addOptions(['Web Development', 'Data Science', 'Artificial Intelligence', 'Business','Mobile Development', 'Cloud Computing', 'Cybersecurity']);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+</html>

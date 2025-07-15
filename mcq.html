@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced MCQ Generator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #1a1818;
+        }
+        h1 {
+            color: #3f51b5;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-section {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .input-section input, .input-section select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .input-section button {
+            padding: 12px 25px;
+            background-color:  #5c6bc0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .input-section button:hover {
+            background-color:  #3f51b5;
+        }
+        .question-container {
+            margin-top: 30px;
+            display: none;
+        }
+        .question {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .question-text {
+            font-weight: 600;
+            font-size: 18px;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+        .question-number {
+            background: #5c6bc0;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .options {
+            margin-left: 45px;
+        }
+        .option {
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            border: 1px solid #e0e0e0;
+            background-color: #fafafa;
+        }
+        .option:hover {
+            background-color: #f0f0f0;
+        border-color: #5c6bc0;
+        }
+        .option.selected {
+            background-color: #e8eaf6;
+            border-color: #5c6bc0;
+        }
+        .option.correct {
+            background-color: #e8f5e9;
+        border-color: #66bb6a;
+        }
+        .option.incorrect {
+            background-color: #ffebee;
+            border-color: #ef5350;
+        }
+        .option input {
+            margin-right: 15px;
+            transform: scale(1.3);
+            cursor: pointer;
+        }
+        .option label {
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .action-buttons button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        #submitBtn {
+            background-color: #66bb6a;
+            color: white;
+        }
+        #submitBtn:hover {
+            background-color: #43a047;
+        }
+        #submitBtn:disabled {
+            background-color: #b0bec5;
+            cursor: not-allowed;
+        }
+        #resetBtn {
+            background-color: #ef5350;
+            color: white;
+        }
+        #resetBtn:hover {
+            background-color:  #d32f2f;
+        }
+        .result-container {
+            margin-top: 30px;
+            display: none;
+        }
+        .score-card {
+            background:  #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .score-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #66bb6a;
+            margin: 10px 0;
+        }
+        .score-text {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #66bb6a;
+            transition: width 0.5s;
+        }
+        .feedback {
+            font-size: 18px;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        .question-result {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .question-result.correct {
+            border-left: 4px solid #2ecc71;
+            background-color: #f1f8e9;
+        }
+        .question-result.incorrect {
+            border-left: 4px solid #e74c3c;
+            background-color: #ffebee;
+        }
+        .explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 15px;
+            display: none;
+        }
+        .toggle-explanation {
+            color: #5c6bc0;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid  #5c6bc0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced MCQ Generator</h1>
+    
+    <div class="input-section">
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="topicInput" placeholder="Enter topic (e.g., Python,html,css)" style="width: 60%;">
+            <select id="difficultySelect" style="width: 25%;">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <div>
+            <select id="questionCount" style="width: 25%; margin-right: 10px;">
+                <option value="5">5 Questions</option>
+                <option value="10" selected>10 Questions</option>
+                <option value="15">15 Questions</option>
+                <option value="20">20 Questions</option>
+            </select>
+            <button id="generateBtn">Generate MCQs</button>
+        </div>
+    </div>
+    
+    <div id="loadingIndicator" class="loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Generating your questions... Please wait.</p>
+    </div>
+    
+    <div id="questionContainer" class="question-container">
+        <div id="questionsList"></div>
+        
+        <div class="action-buttons">
+            <button id="resetBtn">Reset Answers</button>
+            <button id="submitBtn" disabled>Submit Answers</button>
+        </div>
+    </div>
+    
+    <div id="resultContainer" class="result-container"></div>
+
+    <script>
+        let quizData = [];
+        let userAnswers = {};
+        let correctAnswers = {};
+        
+        $(document).ready(function() {
+            // Generate questions
+            $('#generateBtn').click(function() {
+                const topic = $('#topicInput').val().trim();
+                const difficulty = $('#difficultySelect').val();
+                const count = $('#questionCount').val();
+                
+                if (!topic) {
+                    alert('Please enter a topic');
+                    return;
+                }
+                
+                $('#loadingIndicator').show();
+                $('#questionContainer').hide();
+                $('#resultContainer').hide().empty();
+                
+                // Simulate API call (replace with actual AJAX call)
+                setTimeout(() => {
+                    generateMockQuestions(topic, difficulty, count);
+                    $('#loadingIndicator').hide();
+                    $('#questionContainer').show();
+                }, 1500);
+            });
+            
+            // Reset answers
+            $('#resetBtn').click(function() {
+                $('input[type="radio"]:checked').prop('checked', false);
+                $('.option').removeClass('selected');
+                userAnswers = {};
+                $('#submitBtn').prop('disabled', true);
+                $('#resultContainer').hide();
+            });
+            
+            // Submit answers
+            $('#submitBtn').click(function() {
+                evaluateAnswers();
+            });
+            
+            // Radio button selection
+            $(document).on('change', 'input[type="radio"]', function() {
+                const questionId = $(this).attr('name');
+                const optionValue = $(this).val();
+                
+                userAnswers[questionId] = optionValue;
+                $(this).closest('.option').addClass('selected').siblings().removeClass('selected');
+                
+                // Enable submit button if all questions are answered
+                const totalQuestions = Object.keys(correctAnswers).length;
+                const answeredQuestions = Object.keys(userAnswers).length;
+                $('#submitBtn').prop('disabled', answeredQuestions !== totalQuestions);
+            });
+            
+            // Toggle explanation
+            $(document).on('click', '.toggle-explanation', function() {
+                $(this).siblings('.explanation').slideToggle();
+                $(this).text(function(i, text) {
+                    return text === "Show Explanation" ? "Hide Explanation" : "Show Explanation";
+                });
+            });
+        });
+        
+        function generateMockQuestions(topic, difficulty, count) {
+    quizData = [];
+    userAnswers = {};
+    correctAnswers = {};
+
+    const pythonQuestions = [
+        {
+            text: "Which keyword is used to create a function in Python?",
+            options: [
+                { id: "a", text: "function", correct: false },
+                { id: "b", text: "def", correct: true },
+                { id: "c", text: "fun", correct: false },
+                { id: "d", text: "define", correct: false }
+            ],
+            explanation: "In Python, 'def' is the keyword used to define a function."
+        },
+        {
+            text: "What does the len() function do in Python?",
+            options: [
+                { id: "a", text: "Returns the length of an object", correct: true },
+                { id: "b", text: "Counts the number of arguments", correct: false },
+                { id: "c", text: "Calculates memory usage", correct: false },
+                { id: "d", text: "Determines the data type", correct: false }
+            ],
+            explanation: "len() returns the number of items in an object like a list, string, or dictionary."
+        },
+        
+        {
+            text: "What is the purpose of 'self' in Python classes?",
+            options: [
+                { id: "a", text: "It refers to the superclass", correct: false },
+                { id: "b", text: "It is a placeholder", correct: false },
+                { id: "c", text: "It refers to the instance of the class", correct: true },
+                { id: "d", text: "It refers to a module", correct: false }
+            ],
+            explanation: "'self' represents the instance of the class and is used to access variables that belong to the class."
+        },
+        {
+            text: "Which of these is used to handle exceptions in Python?",
+            options: [
+                { id: "a", text: "try/except", correct: true },
+                { id: "b", text: "do/catch", correct: false },
+                { id: "c", text: "try/catch", correct: false },
+                { id: "d", text: "error/handle", correct: false }
+            ],
+            explanation: "Python uses try and except blocks to handle exceptions."
+        },
+        {
+            text: "Which method is used to add an item to the end of a list?",
+            options: [
+                { id: "a", text: "add()", correct: false },
+                { id: "b", text: "append()", correct: true },
+                { id: "c", text: "insert()", correct: false },
+                { id: "d", text: "push()", correct: false }
+            ],
+            explanation: "append() adds a single item to the end of a list in Python."
+        },
+        {
+            text: "How do you start a comment in Python?",
+            options: [
+                { id: "a", text: "//", correct: false },
+                { id: "b", text: "#", correct: true },
+                { id: "c", text: "/*", correct: false },
+                { id: "d", text: "--", correct: false }
+            ],
+            explanation: "In Python, comments begin with the # character."
+        },
+        {
+            text: "Which of the following is a Python tuple?",
+            options: [
+                { id: "a", text: "[1, 2, 3]", correct: false },
+                { id: "b", text: "{1, 2, 3}", correct: false },
+                { id: "c", text: "(1, 2, 3)", correct: true },
+                { id: "d", text: "<1, 2, 3>", correct: false }
+            ],
+            explanation: "Tuples in Python are defined using parentheses: (1, 2, 3)."
+        },
+        {
+            text: "What is the output of 3 * '7' in Python?",
+            options: [
+                { id: "a", text: "21", correct: false },
+                { id: "b", text: "777", correct: true },
+                { id: "c", text: "Error", correct: false },
+                { id: "d", text: "737", correct: false }
+            ],
+            explanation: "String multiplication in Python repeats the string: '7' * 3 = '777'."
+        },
+        {
+            text: "Which keyword is used to create a class in Python?",
+            options: [
+                { id: "a", text: "define", correct: false },
+                { id: "b", text: "class", correct: true },
+                { id: "c", text: "object", correct: false },
+                { id: "d", text: "type", correct: false }
+            ],
+            explanation: "In Python, 'class' is used to define a new class."
+        }
+    ];
+
+    const htmlQuestions = [
+    {
+        text: "What does HTML stand for?",
+        options: [
+            { id: "a", text: "Hyper Trainer Marking Language", correct: false },
+            { id: "b", text: "Hyper Text Markup Language", correct: true },
+            { id: "c", text: "Hyper Text Marketing Language", correct: false },
+            { id: "d", text: "Hyperlinks Text Mark Language", correct: false }
+        ],
+        explanation: "HTML stands for Hyper Text Markup Language."
+    },
+    {
+        text: "Which tag is used for the largest heading in HTML?",
+        options: [
+            { id: "a", text: "&lt;h6&gt;", correct: false },
+            { id: "b", text: "&lt;heading&gt;", correct: false },
+            { id: "c", text: "&lt;h1&gt;", correct: true },
+            { id: "d", text: "&lt;head&gt;", correct: false }
+        ],
+        explanation: "&lt;h1&gt; defines the largest heading in HTML."
+    },
+    {
+        text: "What is the correct HTML element for inserting a line break?",
+        options: [
+            { id: "a", text: "&lt;br&gt;", correct: true },
+            { id: "b", text: "&lt;break&gt;", correct: false },
+            { id: "c", text: "&lt;lb&gt;", correct: false },
+            { id: "d", text: "&lt;b&gt;", correct: false }
+        ],
+        explanation: "&lt;br&gt; is the tag used to insert a line break in HTML."
+    },
+    {
+        text: "Which HTML attribute is used to define inline styles?",
+        options: [
+            { id: "a", text: "style", correct: true },
+            { id: "b", text: "styles", correct: false },
+            { id: "c", text: "class", correct: false },
+            { id: "d", text: "font", correct: false }
+        ],
+        explanation: "The 'style' attribute is used for inline CSS."
+    },
+    {
+        text: "Which HTML tag is used to define an unordered list?",
+        options: [
+            { id: "a", text: "&lt;ul&gt;", correct: true },
+            { id: "b", text: "&lt;ol&gt;", correct: false },
+            { id: "c", text: "&lt;li&gt;", correct: false },
+            { id: "d", text: "&lt;list&gt;", correct: false }
+        ],
+        explanation: "&lt;ul&gt; is used for unordered (bulleted) lists."
+    },
+    {
+        text: "How can you make a numbered list in HTML?",
+        options: [
+            { id: "a", text: "&lt;ul&gt;", correct: false },
+            { id: "b", text: "&lt;ol&gt;", correct: true },
+            { id: "c", text: "&lt;list&gt;", correct: false },
+            { id: "d", text: "&lt;dl&gt;", correct: false }
+        ],
+        explanation: "&lt;ol&gt; creates an ordered (numbered) list."
+    },
+    {
+        text: "Which HTML tag is used to define a table row?",
+        options: [
+            { id: "a", text: "&lt;td&gt;", correct: false },
+            { id: "b", text: "&lt;tr&gt;", correct: true },
+            { id: "c", text: "&lt;th&gt;", correct: false },
+            { id: "d", text: "&lt;table&gt;", correct: false }
+        ],
+        explanation: "&lt;tr&gt; defines a table row in HTML."
+    },
+    {
+        text: "What is the correct HTML for making a checkbox?",
+        options: [
+            { id: "a", text: "&lt;input type='checkbox'&gt;", correct: true },
+            { id: "b", text: "&lt;checkbox&gt;", correct: false },
+            { id: "c", text: "&lt;check&gt;", correct: false },
+            { id: "d", text: "&lt;input type='check'&gt;", correct: false }
+        ],
+        explanation: "Checkboxes are made using &lt;input type='checkbox'&gt;."
+    },
+    {
+        text: "Which tag is used to create a hyperlink in HTML?",
+        options: [
+            { id: "a", text: "&lt;link&gt;", correct: false },
+            { id: "b", text: "&lt;href&gt;", correct: false },
+            { id: "c", text: "&lt;a&gt;", correct: true },
+            { id: "d", text: "&lt;url&gt;", correct: false }
+        ],
+        explanation: "&lt;a&gt; is used to define a hyperlink."
+    },
+    {
+        text: "Which attribute specifies the destination URL of a link?",
+        options: [
+            { id: "a", text: "href", correct: true },
+            { id: "b", text: "src", correct: false },
+            { id: "c", text: "link", correct: false },
+            { id: "d", text: "target", correct: false }
+        ],
+        explanation: "'href' specifies the destination address in an &lt;a&gt; tag."
+    }
+];
+const cssQuestions = [
+    {
+        text: "What does CSS stand for?",
+        options: [
+            { id: "a", text: "Colorful Style Sheets", correct: false },
+            { id: "b", text: "Creative Style System", correct: false },
+            { id: "c", text: "Cascading Style Sheets", correct: true },
+            { id: "d", text: "Computer Style Sheets", correct: false }
+        ],
+        explanation: "CSS stands for Cascading Style Sheets."
+    },
+    {
+        text: "Which HTML tag is used to link an external CSS file?",
+        options: [
+            { id: "a", text: "&lt;style&gt;", correct: false },
+            { id: "b", text: "&lt;css&gt;", correct: false },
+            { id: "c", text: "&lt;link&gt;", correct: true },
+            { id: "d", text: "&lt;script&gt;", correct: false }
+        ],
+        explanation: "The &lt;link&gt; tag is used to include external CSS."
+    },
+    {
+        text: "Which CSS property controls the text size?",
+        options: [
+            { id: "a", text: "font-style", correct: false },
+            { id: "b", text: "text-size", correct: false },
+            { id: "c", text: "font-size", correct: true },
+            { id: "d", text: "text-style", correct: false }
+        ],
+        explanation: "The 'font-size' property sets the size of the text."
+    },
+    {
+        text: "How do you change the background color in CSS?",
+        options: [
+            { id: "a", text: "background-color: red;", correct: true },
+            { id: "b", text: "bg-color: red;", correct: false },
+            { id: "c", text: "color-background: red;", correct: false },
+            { id: "d", text: "background:color red;", correct: false }
+        ],
+        explanation: "'background-color' is the correct property."
+    },
+    {
+        text: "Which CSS property is used to center text?",
+        options: [
+            { id: "a", text: "text-align: center;", correct: true },
+            { id: "b", text: "align-text: center;", correct: false },
+            { id: "c", text: "horizontal-align: center;", correct: false },
+            { id: "d", text: "center-text: yes;", correct: false }
+        ],
+        explanation: "'text-align: center;' centers the text."
+    },
+    {
+        text: "How do you apply a class selector in CSS?",
+        options: [
+            { id: "a", text: ".classname", correct: true },
+            { id: "b", text: "#classname", correct: false },
+            { id: "c", text: "*classname", correct: false },
+            { id: "d", text: "$classname", correct: false }
+        ],
+        explanation: "Classes are targeted using a dot (.) before the name."
+    },
+    {
+        text: "Which symbol is used for ID selectors in CSS?",
+        options: [
+            { id: "a", text: ".", correct: false },
+            { id: "b", text: "#", correct: true },
+            { id: "c", text: "*", correct: false },
+            { id: "d", text: "&", correct: false }
+        ],
+        explanation: "ID selectors use '#' before the name."
+    },
+    {
+        text: "What is the default position value of an HTML element?",
+        options: [
+            { id: "a", text: "fixed", correct: false },
+            { id: "b", text: "absolute", correct: false },
+            { id: "c", text: "relative", correct: false },
+            { id: "d", text: "static", correct: true }
+        ],
+        explanation: "The default position is 'static'."
+    },
+    {
+        text: "Which property is used to change the font in CSS?",
+        options: [
+            { id: "a", text: "font-weight", correct: false },
+            { id: "b", text: "font-family", correct: true },
+            { id: "c", text: "font-style", correct: false },
+            { id: "d", text: "text-font", correct: false }
+        ],
+        explanation: "'font-family' defines the font of the element."
+    },
+    {
+        text: "How do you add padding to all sides of an element?",
+        options: [
+            { id: "a", text: "padding: 10px;", correct: true },
+            { id: "b", text: "padding-all: 10px;", correct: false },
+            { id: "c", text: "padding-around: 10px;", correct: false },
+            { id: "d", text: "space: 10px;", correct: false }
+        ],
+        explanation: "'padding: 10px;' adds padding to all four sides."
+    }
+];
+const javaQuestions = [
+    {
+        text: "What is JVM in Java?",
+        options: [
+            { id: "a", text: "Java Very Machine", correct: false },
+            { id: "b", text: "Java Virtual Machine", correct: true },
+            { id: "c", text: "Just Virtual Machine", correct: false },
+            { id: "d", text: "Java Verified Method", correct: false }
+        ],
+        explanation: "JVM stands for Java Virtual Machine, which enables Java bytecode to be executed on any platform."
+    },
+    {
+        text: "Which keyword is used to inherit a class in Java?",
+        options: [
+            { id: "a", text: "implements", correct: false },
+            { id: "b", text: "extends", correct: true },
+            { id: "c", text: "inherits", correct: false },
+            { id: "d", text: "instanceof", correct: false }
+        ],
+        explanation: "'extends' is used in Java to inherit from a superclass."
+    },
+    {
+        text: "What is the output of: System.out.println(10 + 20 + \"30\")?",
+        options: [
+            { id: "a", text: "3030", correct: true },
+            { id: "b", text: "102030", correct: false },
+            { id: "c", text: "3020", correct: false },
+            { id: "d", text: "Error", correct: false }
+        ],
+        explanation: "10 + 20 = 30, and then it's concatenated with '30', resulting in '3030'."
+    }
+];
+const cppQuestions = [
+    {
+        text: "Which of the following is used to define a constant in C++?",
+        options: [
+            { id: "a", text: "#define", correct: false },
+            { id: "b", text: "const", correct: true },
+            { id: "c", text: "final", correct: false },
+            { id: "d", text: "constant", correct: false }
+        ],
+        explanation: "In C++, the `const` keyword is used to declare a constant value."
+    },
+    {
+        text: "Which operator is used to allocate memory dynamically in C++?",
+        options: [
+            { id: "a", text: "malloc", correct: false },
+            { id: "b", text: "allocate", correct: false },
+            { id: "c", text: "new", correct: true },
+            { id: "d", text: "create", correct: false }
+        ],
+        explanation: "C++ uses the `new` operator to allocate memory dynamically."
+    },
+    {
+        text: "What is the correct syntax to declare a pointer in C++?",
+        options: [
+            { id: "a", text: "int ptr;", correct: false },
+            { id: "b", text: "int *ptr;", correct: true },
+            { id: "c", text: "pointer int ptr;", correct: false },
+            { id: "d", text: "*int ptr;", correct: false }
+        ],
+        explanation: "Pointers in C++ are declared using an asterisk: `int *ptr;`."
+    },
+    {
+        text: "Which of the following is not a valid access specifier in C++?",
+        options: [
+            { id: "a", text: "public", correct: false },
+            { id: "b", text: "private", correct: false },
+            { id: "c", text: "protected", correct: false },
+            { id: "d", text: "internal", correct: true }
+        ],
+        explanation: "`internal` is not an access specifier in C++; it's from C#."
+    },
+    {
+        text: "What is function overloading in C++?",
+        options: [
+            { id: "a", text: "Using multiple functions with same name but different parameters", correct: true },
+            { id: "b", text: "Using global and local functions", correct: false },
+            { id: "c", text: "Writing too many functions in a program", correct: false },
+            { id: "d", text: "Calling one function from another", correct: false }
+        ],
+        explanation: "Function overloading allows multiple functions with the same name but different parameter lists."
+    }
+];
+
+const aiQuestions = [
+    {
+        text: "Which algorithm is used in the Alpha-Beta pruning technique to improve search efficiency in game trees?",
+        options: [
+            { id: "a", text: "A* Search", correct: false },
+            { id: "b", text: "Minimax", correct: true },
+            { id: "c", text: "Hill Climbing", correct: false },
+            { id: "d", text: "Beam Search", correct: false }
+        ],
+        explanation: "Alpha-Beta pruning is used to enhance the Minimax algorithm by pruning branches that won't affect the final decision."
+    },
+    {
+        text: "What does the Bellman equation help compute in Reinforcement Learning?",
+        options: [
+            { id: "a", text: "Accuracy of a classifier", correct: false },
+            { id: "b", text: "Value function", correct: true },
+            { id: "c", text: "Entropy of a model", correct: false },
+            { id: "d", text: "Gradient of loss", correct: false }
+        ],
+        explanation: "The Bellman equation recursively defines the value of a state in terms of expected future rewards in RL."
+    },
+    {
+        text: "Which of the following is a key characteristic of Deep Q-Learning?",
+        options: [
+            { id: "a", text: "Uses a static policy", correct: false },
+            { id: "b", text: "Utilizes convolutional networks for Q-value approximation", correct: true },
+            { id: "c", text: "Does not require a reward function", correct: false },
+            { id: "d", text: "Only works in continuous action spaces", correct: false }
+        ],
+        explanation: "Deep Q-Learning approximates the Q-function using neural networks, often CNNs in image-based environments."
+    },
+    {
+        text: "Which of the following represents a major limitation of the Turing Test?",
+        options: [
+            { id: "a", text: "It measures memory capacity", correct: false },
+            { id: "b", text: "It focuses on symbolic reasoning", correct: false },
+            { id: "c", text: "It does not evaluate understanding or consciousness", correct: true },
+            { id: "d", text: "It can only be passed by human-level AI", correct: false }
+        ],
+        explanation: "The Turing Test evaluates human-like behavior but does not measure understanding or consciousness."
+    },
+    {
+        text: "In Natural Language Processing, what is the primary purpose of the attention mechanism in Transformer models?",
+        options: [
+            { id: "a", text: "To reduce overfitting", correct: false },
+            { id: "b", text: "To give equal weight to all words", correct: false },
+            { id: "c", text: "To focus on relevant parts of the input sequence", correct: true },
+            { id: "d", text: "To replace the need for training", correct: false }
+        ],
+        explanation: "The attention mechanism allows Transformer models to dynamically focus on the most relevant parts of the input."
+    }
+];
+
+
+    let selectedQuestions = [];
+
+    if (topic.toLowerCase() === "python") {
+    selectedQuestions = pythonQuestions;
+} else if (topic.toLowerCase() === "html") {
+    selectedQuestions = htmlQuestions;
+} else if (topic.toLowerCase() === "css") {
+    selectedQuestions = cssQuestions;
+} else if (topic.toLowerCase() === "java") {
+    selectedQuestions = javaQuestions;
+
+} else if (topic.toLowerCase() === "c++") {
+    selectedQuestions = cppQuestions;
+}
+else if (topic.toLowerCase() === "ai") {
+    selectedQuestions = aiQuestions;
+}
+
+else {
+    alert("No questions available for this topic yet.");
+    return;
+}
+
+
+    selectedQuestions.slice(0, count).forEach((q, i) => {
+
+        const questionId = `q${i}`;
+        correctAnswers[questionId] = q.options.find(o => o.correct).id;
+        quizData.push({
+            id: i,
+            text: q.text,
+            options: q.options,
+            explanation: q.explanation
+        });
+    });
+
+    renderQuestions();
+}
+
+        
+        function renderQuestions() {
+            let html = '';
+            
+            quizData.forEach((question, index) => {
+                html += `
+                <div class="question" id="question-${question.id}">
+                    <div class="question-header">
+                        <div class="question-number">${index + 1}</div>
+                        <div class="question-text">${question.text}</div>
+                    </div>
+                    <div class="options">`;
+                
+                question.options.forEach(option => {
+                    html += `
+                    <div class="option">
+                        <input type="radio" name="q${question.id}" id="q${question.id}_${option.id}" value="${option.id}">
+                        <label for="q${question.id}_${option.id}">${option.text}</label>
+                    </div>`;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            $('#questionsList').html(html);
+            $('#submitBtn').prop('disabled', true);
+        }
+        
+        function evaluateAnswers() {
+            let score = 0;
+            const totalQuestions = quizData.length;
+            let resultsHtml = '';
+            
+            // Calculate score and prepare results
+            quizData.forEach(question => {
+                const questionId = `q${question.id}`;
+                const userAnswer = userAnswers[questionId];
+                const isCorrect = userAnswer === correctAnswers[questionId];
+                
+                if (isCorrect) score++;
+                
+                // Highlight user's selection
+                if (userAnswer) {
+                    $(`#q${question.id}_${userAnswer}`).closest('.option')
+                        .addClass(isCorrect ? 'correct' : 'incorrect');
+                }
+                
+                // Highlight correct answer if user was wrong
+                if (!isCorrect) {
+                    $(`#q${question.id}_${correctAnswers[questionId]}`).closest('.option')
+                        .addClass('correct');
+                }
+                
+                // Build results HTML
+                resultsHtml += `
+                <div class="question-result ${isCorrect ? 'correct' : 'incorrect'}">
+                    <strong>Question ${question.id + 1}:</strong> ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                    ${!isCorrect ? `<div style="color: #27ae60; margin-top: 5px;">Correct answer: ${correctAnswers[questionId].toUpperCase()}</div>` : ''}
+                    <div class="toggle-explanation">Show Explanation</div>
+                    <div class="explanation">
+                        <strong>Explanation:</strong> ${quizData[question.id].explanation}
+                    </div>
+                </div>`;
+            });
+            
+            const percentage = Math.round((score / totalQuestions) * 100);
+            let feedback = '';
+            
+            if (percentage >= 80) {
+                feedback = 'Excellent work! You have a strong understanding of this topic.';
+            } else if (percentage >= 60) {
+                feedback = 'Good job! You have a decent understanding but there is room for improvement.';
+            } else if (percentage >= 40) {
+                feedback = 'Keep practicing! Review the explanations to improve your understanding.';
+            } else {
+                feedback = 'Consider reviewing the topic material and trying again.';
+            }
+            
+            // Build score card
+            const scoreCard = `
+            <div class="score-card">
+                <h2>Your Quiz Results</h2>
+                <div class="score-value">${score}/${totalQuestions}</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                </div>
+                <div class="score-text">${percentage}% Correct</div>
+                <div class="feedback">${feedback}</div>
+            </div>`;
+            
+            $('#resultContainer').html(scoreCard + resultsHtml).show();
+            $('html, body').animate({
+                scrollTop: $('#resultContainer').offset().top
+            }, 800);
+            
+            // Disable further selections
+            $('input[type="radio"]').prop('disabled', true);
+            $('#submitBtn').prop('disabled', true);
+        }
+    </script>
+</body>
+</html>

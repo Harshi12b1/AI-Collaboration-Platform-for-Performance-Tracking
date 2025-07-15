@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Recommendation Chatbot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --bot-color: #f8f9fa;
+      --user-color: #4361ee;
+      --text-dark: #212529;
+      --text-light: #f8f9fa;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: var(--text-dark);
+    }
+    .chatbot-toggle {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      background: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      z-index: 1001;
+    }
+    .chatbot-toggle i {
+      font-size: 1.5rem;
+    }
+    .chatbot-container {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 380px;
+      height: 600px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 1000;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .chatbot-container.active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .chatbot-header {
+      background: var(--primary-color);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chatbot-title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .chatbot-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .message {
+      margin-bottom: 15px;
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      line-height: 1.4;
+      animation: fadeIn 0.3s ease;
+    }
+    .bot-message {
+      background: var(--bot-color);
+      color: var(--text-dark);
+      border-bottom-left-radius: 5px;
+      align-self: flex-start;
+    }
+    .user-message {
+      background: var(--user-color);
+      color: var(--text-light);
+      border-bottom-right-radius: 5px;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chatbot-input {
+      display: flex;
+      padding: 15px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+    #userInput {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #ced4da;
+      border-radius: 25px;
+      outline: none;
+      font-size: 0.95rem;
+    }
+    #sendBtn {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #sendBtn:hover {
+      background: var(--secondary-color);
+    }
+    .options-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .option-btn {
+      background: white;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .option-btn:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+    .course-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 4px solid var(--primary-color);
+    }
+    .course-title {
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 5px;
+    }
+    .course-desc {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    .course-meta {
+      font-size: 0.8rem;
+      color: #6c757d;
+      display: flex;
+      gap: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Chatbot Toggle Button -->
+<div class="chatbot-toggle" id="chatbotToggle">
+  <i class="fas fa-robot"></i>
+</div>
+
+<!-- Chatbot Container -->
+<div class="chatbot-container" id="chatbotContainer">
+  <div class="chatbot-header">
+    <div class="chatbot-title">Course Recommendation Assistant</div>
+    <button class="close-btn" id="closeBtn">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div class="chatbot-messages" id="chatMessages">
+    <!-- Messages will be shown here -->
+  </div>
+
+  <div class="chatbot-input">
+    <input type="text" id="userInput" placeholder="Type your message...">
+    <button id="sendBtn">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const chatbotToggle = document.getElementById('chatbotToggle');
+  const chatbotContainer = document.getElementById('chatbotContainer');
+  const closeBtn = document.getElementById('closeBtn');
+  const chatMessages = document.getElementById('chatMessages');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  let isChatOpen = false;
+
+  const courses = {
+    web: [
+      { title: "Modern Web Development", description: "HTML5, CSS3, JavaScript, React and Node.js.", duration: "8 weeks", level: "Intermediate" },
+      { title: "Frontend Fundamentals", description: "Master core concepts with projects.", duration: "6 weeks", level: "Beginner" }
+    ],
+    data: [
+      { title: "Data Science Bootcamp", description: "Python, Pandas, Machine Learning.", duration: "10 weeks", level: "Advanced" },
+      { title: "SQL for Data Analysis", description: "Query databases with SQL.", duration: "4 weeks", level: "Beginner" }
+    ],
+    ai: [
+      { title: "AI & Machine Learning", description: "TensorFlow, PyTorch, Neural Networks.", duration: "12 weeks", level: "Advanced" },
+      { title: "Python for AI", description: "Python basics for AI apps.", duration: "5 weeks", level: "Beginner" }
+    ],
+    business: [
+      { title: "Digital Marketing Strategy", description: "Create powerful marketing campaigns.", duration: "6 weeks", level: "Intermediate" },
+      { title: "Business Analytics", description: "Make data-driven decisions.", duration: "5 weeks", level: "Intermediate" }
+    ],
+    mobile: [
+      { title: "Android App Development", description: "Kotlin and Java for Android apps.", duration: "8 weeks", level: "Intermediate" },
+      { title: "iOS Development with Swift", description: "Build iOS apps using Swift.", duration: "9 weeks", level: "Intermediate" }
+    ],
+    cloud: [
+      { title: "Cloud Computing with AWS", description: "AWS services and architecture.", duration: "10 weeks", level: "Advanced" },
+      { title: "Azure Fundamentals", description: "Microsoft Azure basics.", duration: "5 weeks", level: "Beginner" }
+    ],
+    cybersecurity: [
+      { title: "Cybersecurity Basics", description: "Protect networks and data.", duration: "6 weeks", level: "Beginner" },
+      { title: "Ethical Hacking", description: "Penetration testing and security.", duration: "10 weeks", level: "Advanced" }
+    ]
+  };
+
+  chatbotToggle.addEventListener('click', () => {
+    isChatOpen = !isChatOpen;
+    chatbotContainer.classList.toggle('active', isChatOpen);
+  });
+
+  closeBtn.addEventListener('click', () => {
+    isChatOpen = false;
+    chatbotContainer.classList.remove('active');
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+  userInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+    addMessage(message, 'user');
+    userInput.value = '';
+    setTimeout(() => handleBotResponse(message), 1000);
+  }
+
+  function addMessage(text, sender) {
+    const msg = document.createElement('div');
+    msg.className = `message ${sender}-message`;
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function addOptions(options) {
+    const optionsDiv = document.createElement('div');
+    optionsDiv.className = 'options-container';
+    options.forEach(opt => {
+      const btn = document.createElement('div');
+      btn.className = 'option-btn';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        addMessage(opt, 'user');
+        setTimeout(() => handleBotResponse(opt), 500);
+      };
+      optionsDiv.appendChild(btn);
+    });
+    const container = document.createElement('div');
+    container.className = 'message bot-message';
+    container.appendChild(optionsDiv);
+    chatMessages.appendChild(container);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function addCourses(courseList) {
+    const container = document.createElement('div');
+    container.className = 'message bot-message';
+    container.innerHTML = '<p>Here are some courses you might like:</p>';
+    courseList.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'course-card';
+      card.innerHTML = `<div class="course-title">${c.title}</div>
+                        <div class="course-desc">${c.description}</div>
+                        <div class="course-meta"><span>${c.duration}</span><span>${c.level}</span></div>`;
+      container.appendChild(card);
+    });
+    chatMessages.appendChild(container);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function handleBotResponse(msg) {
+    const m = msg.toLowerCase();
+    if (m.includes('web')) { addMessage("Here are Web Development courses:", 'bot'); addCourses(courses.web); nextPrompt(); }
+    else if (m.includes('data')) { addMessage("Here are Data Science courses:", 'bot'); addCourses(courses.data); nextPrompt(); }
+    else if (m.includes('ai') || m.includes('machine')) { addMessage("Here are AI courses:", 'bot'); addCourses(courses.ai); nextPrompt(); }
+    else if (m.includes('business')) { addMessage("Here are Business courses:", 'bot'); addCourses(courses.business); nextPrompt(); }
+    else if (m.includes('mobile')) { addMessage("Here are Mobile Development courses:", 'bot'); addCourses(courses.mobile); nextPrompt(); }
+    else if (m.includes('cloud')) { addMessage("Here are Cloud Computing courses:", 'bot'); addCourses(courses.cloud); nextPrompt(); }
+    else if (m.includes('cyber')) { addMessage("Here are Cybersecurity courses:", 'bot'); addCourses(courses.cybersecurity); nextPrompt(); }
+    else if (m.includes('yes')) { askInterest(); }
+    else if (m.includes('no')) { addMessage("Thanks! Feel free to ask again.", 'bot'); }
+    else { askInterest(); }
+  }
+
+  function askInterest() {
+    addMessage("What field are you interested in?", 'bot');
+    addOptions(["Web Development", "Data Science", "Artificial Intelligence", "Business", "Mobile Development", "Cloud Computing", "Cybersecurity"]);
+  }
+
+  function nextPrompt() {
+    setTimeout(() => {
+      addMessage("Would you like to explore more fields?", 'bot');
+      addOptions(["Yes", "No"]);
+    }, 1000);
+  }
+
+  // Initial bot message
+  setTimeout(askInterest, 1000);
+});
+</script>
+
+</body>
+</html>
